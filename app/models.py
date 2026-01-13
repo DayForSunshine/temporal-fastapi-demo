@@ -22,7 +22,7 @@ class JobRequest(BaseModel):
             raise ValueError("'numbers' 必须是一个列表")
         if len(v['numbers']) == 0:
             raise ValueError("'numbers' 列表不能为空")
-        return v
+        return v #如果不返回 v，Pydantic 会认为这个字段的值是 None，导致数据丢失。
 
 # Job Status + Progress Response
 class JobProgress(BaseModel):
