@@ -14,12 +14,12 @@ async def main():
     worker = Worker(
         client,
         task_queue=TASK_QUEUE_NAME,
-        workflows=[JobWorkflow],
-        activities=[sum_numbers_activity],
+        workflows=[JobWorkflow], #可以在同一个worker中注册多个workflow，比如先创建账户，再下单两个workflow。
+        activities=[sum_numbers_activity], #这里才真正取出代码执行，workflow里只是提取Activity名称和参数。
     )
 
     print(f"Worker started... listening on {TASK_QUEUE_NAME}")
-    await worker.run()
+    await worker.run() #可以在同一个进程中创建多个worker实例，分别监听不同的任务队列，然后asyncio.gather让它们同时运行。
 
 if __name__ == "__main__":
     asyncio.run(main())
