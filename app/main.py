@@ -23,14 +23,17 @@ async def lifespan(app: FastAPI):
     global temporal_client
     try:
         temporal_client = await Client.connect("localhost:7233")
-        yield
-    finally:
-        pass
+        print("Temporal connects successfully")
+    except Exception as e:
+        print("Temporal fails to connect")
+
+    yield
+    
 
 app = FastAPI(lifespan=lifespan)
 #app = FastAPI()
 
-
+"""
 # 捕获JSON解析错误 
 @app.exception_handler(JSONDecodeError)
 async def json_decode_error_handler(request: Request, exc: JSONDecodeError):
@@ -38,14 +41,17 @@ async def json_decode_error_handler(request: Request, exc: JSONDecodeError):
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"message": "Request Format invalid，please make sure that standard JSON format", "details": str(exc)},
     )
+"""
+
 
 # 捕获字段验证错误 (防缺字段/类型错)
-@app.exception_handler(RequestValidationError)
+@app.exception_handler(RequestValidationError) 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"message": "参数校验失败", "errors": exc.errors()},
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,       #在数据到达时，Pydantic Validator捕获代码抛出的ValueError包装成ValidationError，FastAPI捕获Pydantic的ValidationError包装成RequestValidationError。
+        content={"message": "参数校验失败", "errors": str(exc)}, #exc.errors()是错误列表不是字符串，包含不可序列化的ValueError Python对象（原因如上），JSON序列化器试图将其转成文本所以报错。
     )
+
 
 
 # 简单的单例模式获取 Temporal Client
@@ -60,8 +66,9 @@ async def get_client():
 @app.post("/jobs", response_model=dict) 
 async def start_job(request: JobRequest):
     
-    if not request.input.get("numbers"):
-         raise HTTPException(status_code=400, detail="Input 'numbers' is required and cannot be empty")
+    #if not request.input.get("numbers"):   #Pydantic已经把JSON数据转换成了JobRequest实例对象，不能字典读取。
+    if not request.input.numbers:          #保留Pydantic自定义校验和第二个全局异常处理器关联输出自定义错误信息，以及此处也可捕获异常输出自定义错误信息。
+        raise HTTPException(status_code=400, detail="Input 'numbers' is required and cannot be empty")
 
     try:
         client = await get_client()    
