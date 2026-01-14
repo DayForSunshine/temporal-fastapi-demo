@@ -15,7 +15,7 @@ class JobRequest(BaseModel):
     #options: JobInputOptions
     
     @field_validator('input') #自定义校验input字段
-    def validate_input(cls, v): #cls表示当前类本身（JobRequest）， v待校验的值input
+    def validate_input(cls, v): #cls表示当前类本身（JobRequest）， v待校验的值input。数据已经由JSON被转换成JobRequest对象所以不能字典方式读取numbers。
         if v.numbers is None:
             raise ValueError("Must include 'numbers' attribute") #Pydantic捕获ValueError包装成RequestValidationError，FastAPI捕获RequestValidationError然后将状态码设为422和错误信息一起塞进响应体发回msg字段显示
         if not isinstance(v.numbers, list):
